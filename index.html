@@ -251,6 +251,13 @@ document.body.innerHTML = `
     </div>
   </section>
 
+  <!-- ADSROSTER SPONSORS (homepage-hero) - stays hidden until there is something to show -->
+  <section class="ar-section" id="adsRosterSection" style="display:none;">
+    <div class="container">
+      <div id="adsRosterSpots" class="ar-grid"></div>
+    </div>
+  </section>
+
   <section class="productos-section">
     <div class="container">
       <div id="productosGrid" class="productos-grid">
@@ -877,6 +884,213 @@ function cargarCarritoLocalStorage() {
     if (s) { carrito = JSON.parse(s); actualizarCarrito(); }
   } catch(e) {}
 }
+
+// ============================================================
+//  ADSROSTER SPONSORS  (placement: homepage-hero)
+//  Only edit the two values below. To remove ads completely,
+//  delete this whole block and the "adsRosterSection" section.
+// ============================================================
+(function () {
+  const ADSROSTER = {
+    PUBLIC_KEY: 'aidx_test_d3ba5e2a5beb60e7deaff803f4fbc07cc0f5356055370f89', // swap for your aidx_live_ key when you go live
+    PLACEMENT:  'homepage-hero'
+  };
+  const BASE_URL = 'https://adsroster.com';
+  const MODE_PARAM = '__adsroster_mode';
+
+  const section = document.getElementById('adsRosterSection');
+  const box = document.getElementById('adsRosterSpots');
+  if (!section || !box) return;
+
+  // ---- small styles, using the store's own colours ----
+  const st = document.createElement('style');
+  st.textContent = `
+    .ar-section { padding: 30px 0 0; }
+    .ar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 420px)); gap: 15px; justify-content: center; }
+    .ar-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+    .ar-link { color: inherit; text-decoration: none; display: block; }
+    .ar-img { width: 100%; max-height: 300px; object-fit: contain; background: #f5f5f5; display: block; }
+    .ar-body { padding: 12px 14px; }
+    .ar-tag { display: inline-block; font-size: 11px; font-weight: 600; color: #666; background: var(--light-bg); padding: 3px 10px; border-radius: 12px; margin-bottom: 8px; }
+    .ar-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: var(--dark); margin-bottom: 6px; line-height: 1.3; }
+    .ar-desc { font-size: 13px; color: #666; line-height: 1.5; }
+    .ar-more { display: block; padding: 8px 14px 12px; font-size: 12px; color: #999; text-decoration: none; }
+    .ar-more:hover { color: var(--primary); }
+    .ar-empty { text-decoration: none; display: block; padding: 28px 20px; text-align: center; border: 2px dashed var(--border); border-radius: 15px; color: var(--primary); background: white; }
+    .ar-empty strong { display: block; font-size: 17px; margin-bottom: 6px; font-family: 'Playfair Display', serif; }
+    .ar-empty span { font-size: 13px; color: #666; }
+    .ar-empty:hover { border-color: var(--primary); }
+  `;
+  document.head.appendChild(st);
+
+  // ---- helpers ----
+  function purchaseMode() {
+    try { return new URLSearchParams(window.location.search).get(MODE_PARAM) === 'booking'; }
+    catch (e) { return false; }
+  }
+  function safeUrl(u) {
+    try {
+      const x = new URL(u, window.location.href);
+      return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : '';
+    } catch (e) { return ''; }
+  }
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  // ---- impressions: count only after 50% visible for 1 second ----
+  const seen = new Set();
+  let observer = null;
+  const timers = new Map();   // node -> timeout id
+  const payloads = new Map(); // node -> {key, url}
+
+  function stopTimer(node) {
+    clearTimeout(timers.get(node));
+    timers.delete(node);
+  }
+  function startTimer(node) {
+    const p = payloads.get(node);
+    stopTimer(node);
+    if (!p || seen.has(p.key) || document.visibilityState !== 'visible') return;
+    timers.set(node, setTimeout(function () {
+      if (purchaseMode()) return;
+      seen.add(p.key);
+      try { fetch(p.url, { method: 'POST', keepalive: true }).catch(function () {}); } catch (e) {}
+    }, 1000));
+  }
+  function resetObserver() {
+    if (observer) observer.disconnect();
+    timers.forEach(function (t) { clearTimeout(t); });
+    timers.clear();
+    payloads.clear();
+    if (!('IntersectionObserver' in window)) return;
+    observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.5) startTimer(entry.target);
+        else stopTimer(entry.target);
+      });
+    }, { threshold: 0.5 });
+  }
+  document.addEventListener('visibilitychange', function () {
+    timers.forEach(function (t) { clearTimeout(t); });
+    timers.clear();
+    // visible nodes are re-evaluated by the observer on the next scroll; restart for those already tracked
+    if (document.visibilityState === 'visible') {
+      payloads.forEach(function (_, node) {
+        const r = node.getBoundingClientRect();
+        const vh = window.innerHeight || document.documentElement.clientHeight;
+        const visibleH = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+        if (r.height > 0 && visibleH / r.height >= 0.5) startTimer(node);
+      });
+    }
+  });
+
+  // ---- render ----
+  let lastSignature = null;
+
+  function render(spots) {
+    const pm = purchaseMode();
+    const cards = [];
+
+    spots.forEach(function (spot) {
+      if (!spot || spot.enabled === false) return;           // paused spot: skip only this one
+
+      const camp = pm ? null : spot.campaign;
+      const clickUrl = pm ? '' : safeUrl(spot.clickUrl);
+      const bookingUrl = safeUrl(spot.bookingUrl || spot.advertiseUrl);
+
+      if (camp && clickUrl) {
+        const card = el('div', 'ar-card');
+        const trackBox = el('div');                           // the part we measure for impressions
+        const a = el('a', 'ar-link');
+        a.href = clickUrl;
+        a.target = '_blank';
+        a.rel = 'sponsored noopener noreferrer';
+
+        const imgUrl = safeUrl(camp.image);
+        if (imgUrl) {
+          const img = el('img', 'ar-img');
+          img.src = imgUrl;
+          img.alt = camp.title || camp.headline || camp.brand || 'Sponsored';
+          img.loading = 'lazy';
+          img.onerror = function () { img.style.display = 'none'; };
+          a.appendChild(img);
+        }
+        const body = el('div', 'ar-body');
+        body.appendChild(el('span', 'ar-tag', 'Sponsored' + (camp.brand ? ' \u00B7 ' + camp.brand : '')));
+        const title = camp.title || camp.headline;
+        if (title) body.appendChild(el('h3', 'ar-title', title));
+        if (camp.description) body.appendChild(el('p', 'ar-desc', camp.description));
+        a.appendChild(body);
+        trackBox.appendChild(a);
+        card.appendChild(trackBox);
+
+        if (bookingUrl) {
+          const more = el('a', 'ar-more', 'Advertise here \u2192');
+          more.href = bookingUrl;
+          more.target = '_blank';
+          more.rel = 'noopener noreferrer';
+          card.appendChild(more);
+        }
+        cards.push({ node: card, track: trackBox, spot: spot, campaignId: camp.id });
+        return;
+      }
+
+      // enabled but no campaign (or purchase mode): empty state
+      if (spot.fallback === 'advertise' || pm) {
+        if (!bookingUrl) return;
+        const a = el('a', 'ar-empty');
+        a.href = bookingUrl;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.appendChild(el('strong', null, 'Advertise here'));
+        a.appendChild(el('span', null, 'Your brand could be here. Choose your dates \u2192'));
+        cards.push({ node: a, track: null, spot: spot });
+      }
+      // fallback "hidden": show nothing for this spot
+    });
+
+    if (cards.length === 0) {
+      section.style.display = 'none';
+      box.textContent = '';
+      lastSignature = null;
+      resetObserver();
+      return;
+    }
+
+    box.textContent = '';
+    resetObserver();
+    cards.forEach(function (c) {
+      box.appendChild(c.node);
+      if (c.track && c.spot.impressionUrl && !c.spot.preview && observer) {
+        const url = safeUrl(c.spot.impressionUrl);
+        if (!url) return;
+        payloads.set(c.track, { key: ADSROSTER.PLACEMENT + ':' + c.spot.id + ':' + c.campaignId, url: url });
+        observer.observe(c.track);
+      }
+    });
+    section.style.display = 'block';
+  }
+
+  // ---- load (and refresh every 60s, same as the official SDK) ----
+  function load() {
+    fetch(BASE_URL + '/api/delivery/' + encodeURIComponent(ADSROSTER.PLACEMENT) + '?key=' + encodeURIComponent(ADSROSTER.PUBLIC_KEY), { cache: 'no-store' })
+      .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d && d.error || 'Unavailable'); return d; }); })
+      .then(function (data) {
+        const spots = Array.isArray(data.spots) ? data.spots : [];
+        const sig = JSON.stringify(spots.map(function (s) {
+          return [s.id, s.enabled, s.fallback, s.clickUrl, s.impressionUrl, s.bookingUrl, s.campaign];
+        })) + purchaseMode();
+        if (sig !== lastSignature) { lastSignature = sig; render(spots); }
+      })
+      .catch(function () { /* keep the store working; ads just stay hidden or as last shown */ })
+      .then(function () { setTimeout(load, 60000); });
+  }
+  load();
+})();
 </script>
 </body>
 </html>
