@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Online Store</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script
   async
@@ -902,6 +904,24 @@ function cargarCarritoLocalStorage() {
   const box = document.getElementById('adsRosterSpots');
   if (!section || !box) return;
 
+  // ---- keep the page steady: hold the ad space open before the ad arrives ----
+  const SLOT_KEY = 'ar_slot_h_' + ADSROSTER.PLACEMENT;
+  const DEFAULT_SLOT_H = 119;   // height of the "Advertise here" box
+  (function reserveSlot() {
+    let h = DEFAULT_SLOT_H;
+    try {
+      const saved = localStorage.getItem(SLOT_KEY);
+      if (saved !== null && !isNaN(Number(saved))) h = Number(saved);
+    } catch (e) {}
+    if (h > 0) {
+      box.style.minHeight = h + 'px';
+      section.style.display = 'block';
+    }
+  })();
+  function rememberSlot(h) {
+    try { localStorage.setItem(SLOT_KEY, String(Math.round(h))); } catch (e) {}
+  }
+
   // ---- small styles, using the store's own colours ----
   const st = document.createElement('style');
   st.textContent = `
@@ -909,7 +929,7 @@ function cargarCarritoLocalStorage() {
     .ar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 420px)); gap: 15px; justify-content: center; }
     .ar-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
     .ar-link { color: inherit; text-decoration: none; display: block; }
-    .ar-img { width: 100%; max-height: 300px; object-fit: contain; background: #f5f5f5; display: block; }
+    .ar-img { width: 100%; height: 240px; object-fit: contain; background: #f5f5f5; display: block; }
     .ar-body { padding: 12px 14px; }
     .ar-tag { display: inline-block; font-size: 11px; font-weight: 600; color: #666; background: var(--light-bg); padding: 3px 10px; border-radius: 12px; margin-bottom: 8px; }
     .ar-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: var(--dark); margin-bottom: 6px; line-height: 1.3; }
@@ -1055,6 +1075,8 @@ function cargarCarritoLocalStorage() {
 
     if (cards.length === 0) {
       section.style.display = 'none';
+      box.style.minHeight = '';
+      rememberSlot(0);
       box.textContent = '';
       lastSignature = null;
       resetObserver();
@@ -1073,6 +1095,10 @@ function cargarCarritoLocalStorage() {
       }
     });
     section.style.display = 'block';
+    box.style.minHeight = '';
+    const slotH = box.getBoundingClientRect().height;
+    box.style.minHeight = slotH + 'px';
+    rememberSlot(slotH);
   }
 
   // ---- load (and refresh every 60s, same as the official SDK) ----
@@ -1086,7 +1112,14 @@ function cargarCarritoLocalStorage() {
         })) + purchaseMode();
         if (sig !== lastSignature) { lastSignature = sig; render(spots); }
       })
-      .catch(function () { /* keep the store working; ads just stay hidden or as last shown */ })
+      .catch(function () {
+        // keep the store working; if no ad was ever shown, close the empty space
+        if (lastSignature === null) {
+          section.style.display = 'none';
+          box.style.minHeight = '';
+          rememberSlot(0);
+        }
+      })
       .then(function () { setTimeout(load, 60000); });
   }
   load();
