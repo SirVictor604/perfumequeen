@@ -47,7 +47,7 @@ const CONFIG = {
   COPYRIGHT_TEXT: "All rights reserved.",
   DEV_NAME: "Online Landlord",
   DEV_WHATSAPP: "2349065147362",   // developer WhatsApp, international format, digits only
-  DEV_MESSAGE: "Hello, I just saw the tshirt website you built and I want one like it for my business."
+  DEV_MESSAGE: "Hello, I just saw the t-shirt website you built and I want one like it for my business."
 };
 /* ================== END OF EDIT SECTION ================== */
 </script>
@@ -58,12 +58,12 @@ const CONFIG = {
 :root{--milk:#F6F0E4;--milk2:#EDE3D1;--ink:#241615;--red:#A3161C;--red2:#7B0F14;--line:#D9CDB8;--serif:'Bodoni Moda',Georgia,serif;--sans:'Hanken Grotesk',system-ui,sans-serif}
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth}
-body{background:var(--milk);color:var(--ink);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
-button{font:inherit;cursor:pointer;color:inherit}
+body{overflow-x:hidden;-webkit-text-size-adjust:100%;background:var(--milk);color:var(--ink);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer;color:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 img{display:block;max-width:100%}
 :focus-visible{outline:2px solid var(--red);outline-offset:3px}
-.bar{background:var(--red);color:var(--milk);overflow:hidden;white-space:nowrap;padding:9px 0;font-size:14px}
-.bar-in{display:inline-flex;animation:run 38s linear infinite}
+.bar{pointer-events:none;user-select:none;-webkit-user-select:none;background:var(--red);color:var(--milk);overflow:hidden;white-space:nowrap;padding:9px 0;font-size:14px}
+.bar-in{display:inline-flex;will-change:transform;animation:run 38s linear infinite}
 .bar span{padding-right:4rem}
 @keyframes run{to{transform:translateX(-50%)}}
 header{display:flex;justify-content:space-between;align-items:center;padding:18px 5vw;border-bottom:1px solid var(--line)}
@@ -76,11 +76,9 @@ header a.wa:hover{background:var(--ink);color:var(--milk)}
 .hero p.tag{font:italic 500 clamp(1.2rem,2.4vw,1.8rem)/1.3 var(--serif);margin:1.4rem 0 2rem;max-width:30ch}
 .btn{position:relative;overflow:hidden;z-index:0;display:inline-block;background:var(--red);color:var(--milk);border:0;padding:16px 34px;font-weight:600;text-decoration:none;font-size:16px;transition:color .3s}
 .btn::before{content:"";position:absolute;inset:0;background:var(--red2);transform:translateY(101%);transition:transform .45s cubic-bezier(.2,.8,.2,1);z-index:-1}
-.btn:hover::before{transform:none}
 .btn:disabled{opacity:.7;cursor:wait}
 .btn.line{background:none;color:var(--ink);border:1px solid var(--ink)}
 .btn.line::before{background:var(--ink)}
-.btn.line:hover{color:var(--milk)}
 footer .btn.line::before{background:var(--red)}
 .stage{position:relative;background:var(--red);aspect-ratio:1/1.1;overflow:hidden;cursor:pointer;border:0;width:100%;padding:0;display:block;text-align:left;color:var(--milk)}
 .stage::after{content:"";position:absolute;inset:3.5%;border:1px solid rgba(246,240,228,.45);pointer-events:none;z-index:5}
@@ -109,7 +107,8 @@ footer .btn.line::before{background:var(--red)}
 .pic{position:relative;aspect-ratio:1/1.15;background:var(--milk2);overflow:hidden}
 .pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .45s}
 .pic img+img{opacity:0}
-.card:hover .pic img+img{opacity:1}
+@media(hover:hover){.card:hover .pic img+img{opacity:1}.card:hover .pic img{transform:scale(1.05)}.btn:hover::before{transform:none}.btn.line:hover{color:var(--milk)}body.run .l:hover{transform:translateY(-.06em);color:var(--red2)}}
+.btn:active::before{transform:none}.btn.line:active{color:var(--milk)}
 .badge{position:absolute;top:12px;left:12px;background:var(--red);color:var(--milk);font-size:12px;font-weight:600;padding:3px 10px;z-index:2}
 .badge.sold{background:var(--ink)}
 .card h3{font:500 1.15rem var(--serif);margin-top:14px}
@@ -119,7 +118,7 @@ footer .btn.line::before{background:var(--red)}
 footer{background:var(--ink);color:var(--milk);padding:7vh 5vw;text-align:center}
 footer .logo{--a:var(--milk);--b:#E9A1A4;font-size:2rem}
 footer p{margin:.6rem auto 1.4rem;max-width:50ch;opacity:.8}
-dialog{border:0;padding:0;background:var(--milk);width:min(1000px,96vw);max-height:94vh;overflow:auto;margin:auto}
+dialog{border:0;padding:0;background:var(--milk);width:min(1000px,96vw);max-height:94vh;max-height:94dvh;overflow:auto;margin:auto}
 dialog::backdrop{background:rgba(36,22,21,.7);backdrop-filter:blur(3px)}
 .x{position:sticky;top:0;float:right;z-index:5;background:var(--milk);border:1px solid var(--ink);width:42px;height:42px;font-size:20px;margin:12px}
 .pv{display:grid;grid-template-columns:1.05fr 1fr;gap:32px;padding:28px}
@@ -152,25 +151,22 @@ form .btn{width:100%}
 .w{display:inline-block;overflow:hidden;padding:.1em .03em .16em;margin:-.1em -.03em -.16em;vertical-align:top}
 .l{display:inline-block;transform:translateY(115%);transition:transform .4s cubic-bezier(.2,.8,.2,1),color .3s}
 body.run .l{transform:none;animation:rise 1.1s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i)*60ms)}
-body.run .l:hover{transform:translateY(-.06em);color:var(--red2)}
 @keyframes rise{from{transform:translateY(115%)}}
 .hero .tag,.hero .btn{opacity:0;transform:translateY(14px)}
-body.run .hero .tag,body.run .hero .btn{opacity:1;transform:none;transition:opacity 1s ease .9s,transform 1s cubic-bezier(.2,.8,.2,1) .9s}
+body.run .hero .tag,body.run .hero .btn{opacity:1;transform:none;transition:opacity .9s ease .45s,transform .9s cubic-bezier(.2,.8,.2,1) .45s}
 .stage{clip-path:inset(0 0 100% 0)}
-body.run .stage{clip-path:inset(0);transition:clip-path 1.3s cubic-bezier(.7,0,.2,1) .3s}
-#intro{position:fixed;inset:0;z-index:100;background:var(--red);display:grid;place-items:center;transition:transform 1s cubic-bezier(.7,0,.2,1)}
+body.run .stage{clip-path:inset(0);transition:clip-path 1.1s cubic-bezier(.7,0,.2,1) .1s}
+#intro{position:fixed;inset:0;z-index:100;background:var(--red);display:grid;place-items:center;transition:transform .8s cubic-bezier(.7,0,.2,1)}
 #intro.go{transform:translateY(-101%)}
 #intro .nm{font:700 clamp(2.4rem,9vw,5.5rem)/1.05 var(--serif);color:var(--milk);text-align:center;padding:0 5vw}
-#intro .l{transform:none;animation:rise 1s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(.1s + var(--i)*55ms)}
-#intro .ln{height:1px;background:var(--milk);width:0;margin:18px auto 0;animation:ln 1.4s .5s cubic-bezier(.7,0,.2,1) forwards}
+#intro .l{transform:none;animation:rise .7s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(.05s + var(--i)*35ms)}
+#intro .ln{height:1px;background:var(--milk);width:0;margin:18px auto 0;animation:ln .9s .25s cubic-bezier(.7,0,.2,1) forwards}
 @keyframes ln{to{width:min(240px,50vw)}}
 .card .pic{clip-path:inset(100% 0 0 0)}
 .card.in .pic{clip-path:inset(0);transition:clip-path 1s cubic-bezier(.7,0,.2,1) var(--dl,0s)}
 .card h3,.card .m{opacity:0;transform:translateY(10px)}
 .card.in h3,.card.in .m{opacity:1;transform:none;transition:opacity .7s ease calc(var(--dl,0s) + .5s),transform .7s ease calc(var(--dl,0s) + .5s)}
 .pic img{transition:opacity .45s,transform 1.2s cubic-bezier(.2,.8,.2,1)}
-.card:hover .pic img{transform:scale(1.05)}
-.bar:hover .bar-in{animation-play-state:paused}
 .chip span{transition:background .2s,color .2s,transform .25s}
 .chip input:checked+span{transform:scale(1.07)}
 dialog[open]{animation:pop .5s cubic-bezier(.2,.8,.2,1)}
@@ -181,7 +177,7 @@ dialog[open]::backdrop{animation:fade .4s ease}
 .fb a{color:var(--milk);font-weight:600;text-decoration:none;background:linear-gradient(var(--milk),var(--milk)) 0 100%/0 1px no-repeat;transition:background-size .4s;padding-bottom:2px}
 .fb a:hover{background-size:100% 1px}
 @media(max-width:760px){.fb{justify-content:center;text-align:center}}
-@media(max-width:760px){.hero{grid-template-columns:1fr}.pv{grid-template-columns:1fr;padding:16px}.pv-info{padding-top:0}.grid{grid-template-columns:1fr 1fr;gap:26px 12px}.perks{grid-template-columns:1fr}.perks div+div{border-left:0;border-top:1px solid var(--line)}.row{grid-template-columns:1fr}form{padding:8px 16px 28px}header a.wa{display:none}}
+@media(max-width:760px){dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh}.hero{grid-template-columns:1fr}.pv{grid-template-columns:1fr;padding:16px}.pv-info{padding-top:0}.grid{grid-template-columns:1fr 1fr;gap:26px 12px}.perks{grid-template-columns:1fr}.perks div+div{border-left:0;border-top:1px solid var(--line)}.row{grid-template-columns:1fr}form{padding:8px 16px 28px}header a.wa{padding:7px 12px;font-size:13px}}
 @media(prefers-reduced-motion:reduce){.bar-in,.sl img,.logo,body.run .l{animation:none!important}.l{transform:none}.stage,.card .pic{clip-path:none}.hero .tag,.hero .btn,.card h3,.card .m{opacity:1;transform:none}}
 </style>
 </head>
@@ -213,7 +209,7 @@ const swap=()=>$('#dbody').animate([{opacity:0,transform:'translateY(16px)'},{op
 function split(t){let n=0;return t.split(' ').map(w=>`<span class="w">${[...w].map(c=>`<span class="l" aria-hidden="true" style="--i:${n++}">${esc(c)}</span>`).join('')}</span>`).join(' ')}
 let SI=0,ST;
 function slides(){clearInterval(ST);const L=[];P.forEach(p=>{L.push({p,v:'Front view',s:p.front});if(p.back&&p.back!=p.front)L.push({p,v:'Back view',s:p.back})});
-  if(!L.length){$('#flip').style.display='none';return}
+  $('#flip').style.display=L.length?'':'none';if(!L.length)return;
   $('#slides').innerHTML=L.map(x=>`<div class="sl"><img src="${esc(x.s)}" alt="${esc(x.p.name)}, ${x.v}" decoding="async"></div>`).join('');
   const el=[...document.querySelectorAll('.sl')],cap=$('#cap'),pg=$('#pgi'),d=CONFIG.SLIDE_SECONDS;
   const show=i=>{SI=i;el.forEach((e,k)=>e.classList.toggle('on',k==i));const x=L[i];cap.classList.add('sw');setTimeout(()=>{cap.innerHTML=`<div><b>${esc(x.p.name)}</b><span>${x.v}, ${money(x.p.price)}</span></div>`;cap.classList.remove('sw')},300);pg.classList.remove('run');void pg.offsetWidth;pg.style.setProperty('--d',d+'s');pg.classList.add('run')};
@@ -229,19 +225,20 @@ async function load(){
   if(!CONFIG.SHEET_ID){P=DEMO;return}
   try{const s=await sheet(CONFIG.SETTINGS_TAB);s.forEach(r=>{const k=(r[0]||'').trim().toLowerCase(),v=(r[1]||'').trim();if(!v)return;
     if(k=='brand'||k=='brand name')CONFIG.BRAND_NAME=v;else if(k=='tagline')CONFIG.TAGLINE=v;else if(k=='marquee')CONFIG.MARQUEE=v;else if(k=='whatsapp')CONFIG.WHATSAPP=v.replace(/\D/g,'')})}catch(e){}
-  try{P=objs(await sheet(CONFIG.PRODUCTS_TAB)).filter(o=>o.name).map((o,i)=>({id:i,name:o.name,price:parseFloat((o.price||'0').replace(/[^\d.]/g,''))||0,front:img(o.front||o['front image']||o['front view']),back:img(o.back||o['back image']||o['back view']||o.front),desc:o.description||o.desc||'',sizes:o.sizes?o.sizes.split(/[,\s/|]+/).filter(Boolean):CONFIG.SIZES,badge:o.badge||'',sold:/^(yes|true|1|sold)/i.test(o.soldout||o['sold out']||'')}))}catch(e){P=[]}
+  try{P=objs(await sheet(CONFIG.PRODUCTS_TAB)).filter(o=>o.name).map((o,i)=>({id:i,name:o.name,price:parseFloat((o.price||'0').replace(/[^\d.]/g,''))||0,front:img(o.front||o['front image']||o['front view']),back:img(o.back||o['back image']||o['back view']||o.front),desc:o.description||o.desc||'',sizes:o.sizes?o.sizes.split(/[,\s/|]+/).filter(Boolean):CONFIG.SIZES,badge:o.badge||'',sold:/^(yes|true|1|sold)/i.test(o.soldout||o['sold out']||'')}))
+  ;try{localStorage.setItem('tee_cache',JSON.stringify({c:{BRAND_NAME:CONFIG.BRAND_NAME,TAGLINE:CONFIG.TAGLINE,MARQUEE:CONFIG.MARQUEE,WHATSAPP:CONFIG.WHATSAPP},P}))}catch(e){}}catch(e){if(!P.length)P=[]}
 }
 
 function paint(){
   const B=CONFIG.BRAND_NAME;document.title=B+" | "+CONFIG.TAGLINE;
-  ['logo','flogo'].forEach(i=>$('#'+i).textContent=B);$('#hname').innerHTML=split(B);$('#hname').setAttribute('aria-label',B);$('#copy').textContent=`© ${new Date().getFullYear()} ${B}. ${CONFIG.COPYRIGHT_TEXT}`;$('#dev').textContent=CONFIG.DEV_NAME;$('#dev').href=`https://wa.me/${CONFIG.DEV_WHATSAPP}?text=${encodeURIComponent(CONFIG.DEV_MESSAGE)}`;
+  ['logo','flogo'].forEach(i=>$('#'+i).textContent=B);if($('#hname').dataset.b!==B){$('#hname').dataset.b=B;$('#hname').innerHTML=split(B);$('#hname').setAttribute('aria-label',B)}$('#copy').textContent=`© ${new Date().getFullYear()} ${B}. ${CONFIG.COPYRIGHT_TEXT}`;$('#dev').textContent=CONFIG.DEV_NAME;$('#dev').href=`https://wa.me/${CONFIG.DEV_WHATSAPP}?text=${encodeURIComponent(CONFIG.DEV_MESSAGE)}`;
   $('#htag').textContent=CONFIG.TAGLINE;$('#ftag').textContent=CONFIG.TAGLINE;$('#fnote').textContent=CONFIG.FOOTER_NOTE;
   $('#hbtn').textContent=CONFIG.HERO_BUTTON;$('#st').textContent=CONFIG.SHOP_TITLE;$('#ss').textContent=CONFIG.SHOP_SUBTITLE;
-  const m=`<span>${esc(CONFIG.MARQUEE)}</span>`;$('#bar').innerHTML=m.repeat(8);
+  const mq=CONFIG.MARQUEE;if($('#bar').dataset.m!==mq){$('#bar').dataset.m=mq;const m=`<span>${esc(mq)}</span>`,b=$('#bar');b.innerHTML=m+m;const w=Math.max(b.getBoundingClientRect().width/2,1),n=Math.max(1,Math.ceil(innerWidth*1.2/w));b.innerHTML=m.repeat(n*2);b.style.animationDuration=Math.max(14,n*w/55)+'s'}
   $('#perks').innerHTML=CONFIG.PERKS.map(p=>`<div>${esc(p)}</div>`).join('');
   const wa=`https://wa.me/${CONFIG.WHATSAPP}`;$('#hwa').href=wa;$('#fwa').href=wa;
-  $('#grid').innerHTML=P.length?P.map(p=>`<button class="card" data-i="${p.id}">${p.sold?'<span class="badge sold">Sold out</span>':p.badge?`<span class="badge">${esc(p.badge)}</span>`:''}<div class="pic"><img src="${esc(p.front)}" alt="${esc(p.name)} front" loading="lazy"><img src="${esc(p.back)}" alt="${esc(p.name)} back" loading="lazy"></div><h3>${esc(p.name)}</h3><div class="m"><b>${money(p.price)}</b><span>Front &amp; back</span></div></button>`).join(''):'<div class="empty">No tees yet. Add rows to the Products tab of your sheet.</div>';
-  document.querySelectorAll('.card').forEach((c,k)=>{c.onclick=()=>openP(+c.dataset.i);c.style.setProperty('--dl',(k%4)*.12+'s');IO.observe(c)});
+  const gs=JSON.stringify(P)+window.LOADING;if($('#grid').dataset.s!==gs){$('#grid').dataset.s=gs;$('#grid').innerHTML=P.length?P.map(p=>`<button class="card" data-i="${p.id}">${p.sold?'<span class="badge sold">Sold out</span>':p.badge?`<span class="badge">${esc(p.badge)}</span>`:''}<div class="pic"><img src="${esc(p.front)}" alt="${esc(p.name)} front" loading="lazy"><img src="${esc(p.back)}" alt="${esc(p.name)} back" loading="lazy"></div><h3>${esc(p.name)}</h3><div class="m"><b>${money(p.price)}</b><span>Front &amp; back</span></div></button>`).join(''):(window.LOADING?'<div class="empty">Loading the collection...</div>':'<div class="empty">No tees yet. Add rows to the Products tab of your sheet.</div>');
+  document.querySelectorAll('.card').forEach((c,k)=>{c.onclick=()=>openP(+c.dataset.i);c.style.setProperty('--dl',(k%4)*.12+'s');IO.observe(c)})}
 }
 
 function openP(i){
@@ -275,14 +272,16 @@ function orderForm(i){
 }
 $('#x').onclick=()=>$('#dlg').close();
 $('#dlg').addEventListener('click',e=>{if(e.target==$('#dlg'))$('#dlg').close()});
-(()=>{let first=true,done=false,late=false;try{first=!sessionStorage.getItem('seen');sessionStorage.setItem('seen',1)}catch(e){}
+(()=>{let first=true,ready=false,lifted=false;const t0=Date.now(),it=$('#intro');
+try{first=!sessionStorage.getItem('seen');sessionStorage.setItem('seen',1)}catch(e){}
 if(matchMedia('(prefers-reduced-motion:reduce)').matches)first=false;
-const L=load(),it=$('#intro');
-const start=()=>{if(done)return;done=true;paint();
-  if(!first){it.remove();run();return}
-  it.innerHTML=`<div><div class="nm">${split(CONFIG.BRAND_NAME)}</div><div class="ln"></div></div>`;
-  setTimeout(()=>{it.classList.add('go');run();setTimeout(()=>it.remove(),1100)},1900)};
-L.then(start);L.then(()=>{if(late){paint();slides()}});setTimeout(()=>{if(!done){late=true;start()}},4000)})();
+if(!CONFIG.SHEET_ID){P=DEMO;ready=true}else{try{const c=JSON.parse(localStorage.getItem('tee_cache')||'null');if(c&&c.P&&c.P.length){Object.assign(CONFIG,c.c);P=c.P;ready=true}}catch(e){}}
+window.LOADING=!ready;paint();
+const sig=JSON.stringify(P);
+const lift=()=>{if(lifted)return;lifted=true;it.classList.add('go');run();setTimeout(()=>it.remove(),900)};
+const tick=()=>{const e=Date.now()-t0;if(e>=1200&&(ready||e>=3000))lift();else setTimeout(tick,80)};
+if(first){it.innerHTML=`<div><div class="nm">${split(CONFIG.BRAND_NAME)}</div><div class="ln"></div></div>`;tick()}else{it.remove();run()}
+load().then(()=>{ready=true;window.LOADING=false;paint();if(document.body.classList.contains('run')&&JSON.stringify(P)!==sig)slides()})})();
 </script>
 </body>
 </html>
