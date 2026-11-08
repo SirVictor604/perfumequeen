@@ -47,6 +47,10 @@ const CONFIG = {
   // 8b. How many tees show per page before "Next page" appears
   PER_PAGE: 12,
 
+  // 8c. Live update notice: how often (seconds) the store checks your sheet for changes.
+  //     When you change anything in the sheet, visitors still on the site see a "Refresh now" banner.
+  UPDATE_CHECK_SECONDS: 20,
+
   // 9. Footer: copyright + developer credit. Clicking the developer name opens the developer's WhatsApp.
   COPYRIGHT_TEXT: "All rights reserved.",
   DEV_NAME: "Online Landlord",
@@ -187,6 +191,11 @@ dialog[open]::backdrop{animation:fade .4s ease}
 .pager button:disabled{opacity:.35;cursor:default}
 .pager button:not(:disabled):not([aria-current=page]):active{background:var(--ink);color:var(--milk)}
 @media(hover:hover){.pager button:not(:disabled):not([aria-current=page]):hover{background:var(--ink);color:var(--milk)}}
+.upd{position:fixed;left:0;right:0;bottom:0;z-index:90;background:var(--red);color:var(--milk);display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;padding:14px 20px calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 -6px 24px rgba(0,0,0,.25);animation:upin .5s cubic-bezier(.2,.8,.2,1)}
+.upd button{border:0;font-weight:600;padding:9px 20px}
+.upd .r{background:var(--milk);color:var(--red)}
+.upd .c{background:rgba(246,240,228,.2);color:var(--milk);width:34px;height:34px;padding:0;border-radius:50%;font-size:18px}
+@keyframes upin{from{transform:translateY(100%)}}
 @media(max-width:760px){dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh}.hero{grid-template-columns:1fr}.pv{grid-template-columns:1fr;padding:16px}.pv-info{padding-top:0}.grid{grid-template-columns:1fr 1fr;gap:26px 12px}.perks{grid-template-columns:1fr}.perks div+div{border-left:0;border-top:1px solid var(--line)}.row{grid-template-columns:1fr}form{padding:8px 16px 28px}header a.wa{padding:7px 12px;font-size:13px}}
 @media(prefers-reduced-motion:reduce){.bar-in,.sl img,.logo,body.run .l{animation:none!important}.l{transform:none}.stage,.card .pic{clip-path:none}.hero .tag,.hero .btn,.card h3,.card .m{opacity:1;transform:none}}
 </style>
@@ -205,6 +214,7 @@ dialog[open]::backdrop{animation:fade .4s ease}
 <dialog id="dlg"><button class="x" id="x" aria-label="Close">×</button><div id="dbody"></div></dialog>
 
 <script>
+const DEF={BRAND_NAME:CONFIG.BRAND_NAME,TAGLINE:CONFIG.TAGLINE,MARQUEE:CONFIG.MARQUEE,WHATSAPP:CONFIG.WHATSAPP};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=n=>CONFIG.CURRENCY+Number(n||0).toLocaleString('en-NG');
@@ -217,7 +227,7 @@ let P=[],cur=null;
 const IO=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');IO.unobserve(e.target)}}),{threshold:.12});
 const swap=()=>$('#dbody').animate([{opacity:0,transform:'translateY(16px)'},{opacity:1,transform:'none'}],{duration:450,easing:'cubic-bezier(.2,.8,.2,1)'});
 function split(t){let n=0;return t.split(' ').map(w=>`<span class="w">${[...w].map(c=>`<span class="l" aria-hidden="true" style="--i:${n++}">${esc(c)}</span>`).join('')}</span>`).join(' ')}
-let SI=0,ST,PG=1;
+let SI=0,ST,PG=1,BASE='',LASTST='',pendingUpd=false,chkAt=0,OV={};
 function pager(n){const el=$('#pager');if(n<2){el.innerHTML='';return}
   const pgs=[...new Set([1,n,PG-1,PG,PG+1])].filter(x=>x>=1&&x<=n).sort((a,b)=>a-b);
   let h=`<button data-p="${PG-1}" ${PG<2?'disabled':''}>Previous</button>`,last=0;
@@ -231,18 +241,28 @@ function slides(){clearInterval(ST);const L=[];P.slice(0,CONFIG.SLIDE_PRODUCTS||
   const show=i=>{SI=i;[i,(i+1)%el.length].forEach(k=>{const im=el[k].firstChild;if(!im.getAttribute('src'))im.src=im.dataset.s});el.forEach((e,k)=>e.classList.toggle('on',k==i));const x=L[i];cap.classList.add('sw');setTimeout(()=>{cap.innerHTML=`<div><b>${esc(x.p.name)}</b><span>${x.v}, ${money(x.p.price)}</span></div>`;cap.classList.remove('sw')},300);pg.classList.remove('run');void pg.offsetWidth;pg.style.setProperty('--d',d+'s');pg.classList.add('run')};
   show(0);ST=setInterval(()=>show((SI+1)%L.length),d*1000);$('#flip').onclick=()=>openP(L[SI].p.id)}
 function run(){document.body.classList.add('run');slides()}
+function showUpd(){const o=$('#upd');if(o)return;const d=document.createElement('div');d.id='upd';d.className='upd';d.setAttribute('role','status');
+  d.innerHTML='<span>The collection has just been updated.</span><button class="r" type="button">Refresh now</button><button class="c" type="button" aria-label="Close">×</button>';
+  d.querySelector('.r').onclick=()=>location.reload();d.querySelector('.c').onclick=()=>d.remove();document.body.appendChild(d)}
+async function check(){
+  if(!CONFIG.SHEET_ID||document.hidden||Date.now()-chkAt<8000)return;chkAt=Date.now();
+  try{const a=await sheet(CONFIG.PRODUCTS_TAB,1),b=await sheet(CONFIG.SETTINGS_TAB,1).catch(()=>null);
+    const st=b?JSON.stringify(b):LASTST,sg=JSON.stringify(a)+'|'+st;
+    if(!BASE){BASE=sg;LASTST=st;return}
+    if(sg===BASE)return;BASE=sg;LASTST=st;
+    if($('#dlg').open)pendingUpd=true;else showUpd()}catch(e){}}
 
 function parseCSV(t){const r=[];let row=[],c='',q=false;for(let i=0;i<t.length;i++){const ch=t[i];if(q){if(ch=='"'){if(t[i+1]=='"'){c+='"';i++}else q=false}else c+=ch}else if(ch=='"')q=true;else if(ch==','){row.push(c);c=''}else if(ch=='\n'||ch=='\r'){if(ch=='\r'&&t[i+1]=='\n')i++;row.push(c);r.push(row);row=[];c=''}else c+=ch}
 if(c||row.length){row.push(c);r.push(row)}return r}
-async function sheet(tab){const u=`https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;const r=await fetch(u);if(!r.ok)throw 0;return parseCSV(await r.text())}
+async function sheet(tab,b){const u=`https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}&_=${Date.now()}`;const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw 0;return parseCSV(await r.text())}
 function objs(rows){const h=rows[0].map(x=>x.trim().toLowerCase());return rows.slice(1).filter(r=>r.some(x=>x.trim())).map(r=>Object.fromEntries(h.map((k,i)=>[k,(r[i]||'').trim()])))}
 
 async function load(){
   if(!CONFIG.SHEET_ID){P=DEMO;return}
-  try{const s=await sheet(CONFIG.SETTINGS_TAB);s.forEach(r=>{const k=(r[0]||'').trim().toLowerCase(),v=(r[1]||'').trim();if(!v)return;
-    if(k=='brand'||k=='brand name')CONFIG.BRAND_NAME=v;else if(k=='tagline')CONFIG.TAGLINE=v;else if(k=='marquee')CONFIG.MARQUEE=v;else if(k=='whatsapp')CONFIG.WHATSAPP=v.replace(/\D/g,'')})}catch(e){}
-  try{P=objs(await sheet(CONFIG.PRODUCTS_TAB)).filter(o=>o.name).map((o,i)=>({id:i,name:o.name,price:parseFloat((o.price||'0').replace(/[^\d.]/g,''))||0,front:img(o.front||o['front image']||o['front view']),back:img(o.back||o['back image']||o['back view']||o.front),desc:o.description||o.desc||'',sizes:o.sizes?o.sizes.split(/[,\s/|]+/).filter(Boolean):CONFIG.SIZES,badge:o.badge||'',sold:/^(yes|true|1|sold)/i.test(o.soldout||o['sold out']||'')}))
-  ;try{localStorage.setItem('tee_cache',JSON.stringify({c:{BRAND_NAME:CONFIG.BRAND_NAME,TAGLINE:CONFIG.TAGLINE,MARQUEE:CONFIG.MARQUEE,WHATSAPP:CONFIG.WHATSAPP},P}))}catch(e){}}catch(e){if(!P.length)P=[]}
+  try{const s=await sheet(CONFIG.SETTINGS_TAB);LASTST=JSON.stringify(s);OV={};s.forEach(r=>{const k=(r[0]||'').trim().toLowerCase(),v=(r[1]||'').trim();if(!v)return;
+    if(k=='brand'||k=='brand name')OV.BRAND_NAME=v;else if(k=='tagline')OV.TAGLINE=v;else if(k=='marquee')OV.MARQUEE=v;else if(k=='whatsapp')OV.WHATSAPP=v.replace(/\D/g,'')});Object.assign(CONFIG,DEF,OV)}catch(e){}
+  try{const pr=await sheet(CONFIG.PRODUCTS_TAB);BASE=JSON.stringify(pr)+'|'+LASTST;P=objs(pr).filter(o=>o.name).map((o,i)=>({id:i,name:o.name,price:parseFloat((o.price||'0').replace(/[^\d.]/g,''))||0,front:img(o.front||o['front image']||o['front view']),back:img(o.back||o['back image']||o['back view']||o.front),desc:o.description||o.desc||'',sizes:o.sizes?o.sizes.split(/[,\s/|]+/).filter(Boolean):CONFIG.SIZES,badge:o.badge||'',sold:/^(yes|true|1|sold)/i.test(o.soldout||o['sold out']||'')}))
+  ;try{localStorage.setItem('tee_cache2',JSON.stringify({ov:OV,P}))}catch(e){}}catch(e){if(!P.length)P=[]}
 }
 
 function paint(){
@@ -291,13 +311,17 @@ $('#dlg').addEventListener('click',e=>{if(e.target==$('#dlg'))$('#dlg').close()}
 (()=>{let first=true,ready=false,lifted=false;const t0=Date.now(),it=$('#intro');
 try{first=!sessionStorage.getItem('seen');sessionStorage.setItem('seen',1)}catch(e){}
 if(matchMedia('(prefers-reduced-motion:reduce)').matches)first=false;
-if(!CONFIG.SHEET_ID){P=DEMO;ready=true}else{try{const c=JSON.parse(localStorage.getItem('tee_cache')||'null');if(c&&c.P&&c.P.length){Object.assign(CONFIG,c.c);P=c.P;ready=true}}catch(e){}}
+if(!CONFIG.SHEET_ID){P=DEMO;ready=true}else{try{const c=JSON.parse(localStorage.getItem('tee_cache2')||'null');if(c&&c.P&&c.P.length){Object.assign(CONFIG,c.ov||{});P=c.P;ready=true}}catch(e){}}
 window.LOADING=!ready;paint();
 const sig=JSON.stringify(P);
 const lift=()=>{if(lifted)return;lifted=true;it.classList.add('go');run();setTimeout(()=>it.remove(),900)};
 const tick=()=>{const e=Date.now()-t0;if(e>=1200&&(ready||e>=3000))lift();else setTimeout(tick,80)};
 if(first){it.innerHTML=`<div><div class="nm">${split(CONFIG.BRAND_NAME)}</div><div class="ln"></div></div>`;tick()}else{it.remove();run()}
 load().then(()=>{ready=true;window.LOADING=false;paint();if(document.body.classList.contains('run')&&JSON.stringify(P)!==sig)slides()})})();
+$('#dlg').addEventListener('close',()=>{if(pendingUpd){pendingUpd=false;showUpd()}});
+setInterval(check,Math.max(10,CONFIG.UPDATE_CHECK_SECONDS||20)*1000);
+addEventListener('focus',check);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()});
 </script>
 </body>
 </html>
